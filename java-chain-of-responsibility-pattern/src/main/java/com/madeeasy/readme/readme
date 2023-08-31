@@ -1,0 +1,174 @@
+**Java Chain of Responsibility Pattern: Handling Requests Sequentially**
+
+The Chain of Responsibility Design Pattern allows you to create a chain of processing objects, where each object in
+the chain can handle a certain type of request. The request is passed along the chain until it's handled or reaches the end of the chain.
+
+**Example:**
+
+Here's an example of a chain of responsibility pattern in Java that simulates request handling in a purchase approval workflow:
+
+
+           +-------------+          +----------------+          +----------------+
+ Request ->|  Manager    | -> Next ->|    Director   | -> Next ->|      CEO      |
+           +-------------+          +----------------+          +----------------+
+          /          |                /         |                   /
+         /           |               /          |                  /
+        /            |              /           |                 /
+    Process         Reject     Process        Reject          Process
+    Request          Request     Request         Request       Request
+
+
+or
+
+    +---------------+         +---------------+         +---------------+
+    |  Handler 1    | ------> |  Handler 2    | ------> |  Handler 3    |
+    +---------------+         +---------------+         +---------------+
+          |                        |                        |
+          V                        V                        V
+     +-------------------+   +-------------------+   +-------------------+
+     |    Process Req    |   |    Process Req    |   |    Process Req    |
+     +-------------------+   +-------------------+   +-------------------+
+
+or
+
+
+   +-------------+          +---------------+          +-------------+
+   | Handler A   |   -----> |  Handler B    |   -----> | Handler C   |
+   +-------------+          +---------------+          +-------------+
+      ^                       ^                        ^
+      |                       |                        |
+  Handle()               Handle()                Handle()
+      |                       |                        |
+      |                       |                        |
+      v                       v                        v
+ +------------------+   +------------------+   +------------------+
+ |  Concrete A     |   |  Concrete B     |   |  Concrete C     |
+ +------------------+   +------------------+   +------------------+
+ |  processRequest()|   |  processRequest()|   |  processRequest()|
+ +------------------+   +------------------+   +------------------+
+
+or
+
+   +---------------------+       +---------------------+       +---------------------+
+   |    ManagerHandler   | ----> |   DirectorHandler   | ----> |       CEOHandler    |
+   +---------------------+       +---------------------+       +---------------------+
+              ^                         ^                             ^
+              |                         |                             |
+      Request <=5000           Request <=10000             Request <=∞
+   Approved (Manager)        Approved (Director)          Approved (CEO)
+
+
+```java
+// Handler Interface
+interface PurchaseHandler {
+    void setNextHandler(PurchaseHandler handler);
+    void processRequest(PurchaseRequest request);
+}
+
+// Concrete Handlers
+class ManagerHandler implements PurchaseHandler {
+    private PurchaseHandler nextHandler;
+
+    @Override
+    public void setNextHandler(PurchaseHandler handler) {
+        nextHandler = handler;
+    }
+
+    @Override
+    public void processRequest(PurchaseRequest request) {
+        if (request.getAmount() <= 1000) {
+            System.out.println("Manager approves purchase request for $" + request.getAmount());
+        } else if (nextHandler != null) {
+            nextHandler.processRequest(request);
+        }
+    }
+}
+
+class DirectorHandler implements PurchaseHandler {
+    private PurchaseHandler nextHandler;
+
+    @Override
+    public void setNextHandler(PurchaseHandler handler) {
+        nextHandler = handler;
+    }
+
+    @Override
+    public void processRequest(PurchaseRequest request) {
+        if (request.getAmount() <= 5000) {
+            System.out.println("Director approves purchase request for $" + request.getAmount());
+        } else if (nextHandler != null) {
+            nextHandler.processRequest(request);
+        }
+    }
+}
+
+class CEOHandler implements PurchaseHandler {
+    @Override
+    public void setNextHandler(PurchaseHandler handler) {
+        // CEO is the last handler, no next handler needed
+    }
+
+    @Override
+    public void processRequest(PurchaseRequest request) {
+        System.out.println("CEO approves purchase request for $" + request.getAmount());
+    }
+}
+
+// Request Class
+class PurchaseRequest {
+    private double amount;
+
+    public PurchaseRequest(double amount) {
+        this.amount = amount;
+    }
+
+    public double getAmount() {
+        return amount;
+    }
+}
+
+// Client Code
+public class ChainOfResponsibilityExample {
+    public static void main(String[] args) {
+        PurchaseHandler manager = new ManagerHandler();
+        PurchaseHandler director = new DirectorHandler();
+        PurchaseHandler ceo = new CEOHandler();
+
+        manager.setNextHandler(director);
+        director.setNextHandler(ceo);
+
+        PurchaseRequest request1 = new PurchaseRequest(800);
+        PurchaseRequest request2 = new PurchaseRequest(3000);
+        PurchaseRequest request3 = new PurchaseRequest(10000);
+
+        manager.processRequest(request1);
+        manager.processRequest(request2);
+        manager.processRequest(request3);
+    }
+}
+```
+
+**How to Identify When to Apply the Chain of Responsibility Design Pattern:**
+
+1. **Multiple Handlers:** When you have multiple objects that can handle a specific request type, and you want to
+process the request sequentially through them.
+
+2. **Flexibility in Handling:** If you want to allow different handlers to have the opportunity to handle a request in a specific order.
+
+3. **Decoupling:** When you want to decouple the sender and receiver of a request, allowing you to change the handling sequence
+ without changing the client code.
+
+**Where to Apply the Chain of Responsibility Design Pattern:**
+
+- **Request Handling:** In scenarios where you need to process requests in a specific order, such as approvals, validations, or filters.
+
+- **Middleware:** In web applications, handling HTTP requests through middleware components that can perform authentication,
+ logging, and other processing steps.
+
+- **Event Handling:** Managing events in a system by passing them through a series of event handlers.
+
+- **Logging and Error Handling:** Handling logs and errors in a sequential manner to perform different levels of logging or
+error resolution.
+
+By applying the Chain of Responsibility Design Pattern, you can achieve a flexible and dynamic way of processing requests
+ through a chain of handlers, ensuring that the right handler handles each request based on certain conditions or criteria.
